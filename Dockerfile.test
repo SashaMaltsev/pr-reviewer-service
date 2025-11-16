@@ -1,0 +1,19 @@
+FROM golang:1.25-alpine
+
+RUN apk add --no-cache git postgresql-client
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+COPY . .
+
+CMD ["/bin/sh", "-c", "\
+  echo 'Waiting for database...' && \
+  until pg_isready -h postgres-test -p 5432 -U test_user -d pr_reviewer_test; do sleep 1; done && \
+  echo 'Running migrations...' && \
+  goose -dir ./migrations postgres 'user=test_user password=test_password host=postgres-test port=5432 dbname=pr_reviewer_test sslmode=disable' up && \
+  echo 'Running tests...' && \
+  go test -v -tags=integration ./tests/integration/... -timeout=10m"]
