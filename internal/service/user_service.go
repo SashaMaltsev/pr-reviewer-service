@@ -7,49 +7,52 @@ import (
 	repository "github.com/SashaMalcev/pr-reviewer-service/internal/repository/interfaces"
 )
 
+/*
+
+User service for user management and review tracking.
+Handles user activation status and review history retrieval.
+
+*/
 
 type UserService struct {
-    userRepo    repository.UserRepository
-    prRepo      repository.PRRepository
+	userRepo repository.UserRepository
+	prRepo   repository.PRRepository
 }
-
 
 func NewUserService(userRepo repository.UserRepository, prRepo repository.PRRepository) *UserService {
-    return &UserService{
-        userRepo: userRepo,
-        prRepo: prRepo,
-    }
+	return &UserService{
+		userRepo: userRepo,
+		prRepo:   prRepo,
+	}
 }
 
+func (s *UserService) SetIsActive(ctx context.Context, userID string, isActive bool) (*models.User, error) {
 
-func(s *UserService) SetIsActive(ctx context.Context, userID string, isActive bool) (*models.User, error) {
-    
 	user, err := s.userRepo.GetByID(ctx, userID)
-    
+
 	if err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 
-    user.SetActive(isActive)
+	user.SetActive(isActive)
 
-    err = s.userRepo.Update(ctx, user); 
-	
+	err = s.userRepo.Update(ctx, user)
+
 	if err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 
-    return user, nil
+	return user, nil
 }
 
-
-func(s *UserService) GetUserReviews(ctx context.Context, userID string) ([]*models.PullRequest, error) {
+func (s *UserService) GetUserReviews(ctx context.Context, userID string) ([]*models.PullRequest, error) {
 
 	// Verify user exists
-    _, err := s.userRepo.GetByID(ctx, userID); 
+	_, err := s.userRepo.GetByID(ctx, userID)
 
 	if err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 
-    return s.prRepo.GetByReviewer(ctx, userID)
+	return s.prRepo.GetByReviewer(ctx, userID)
 }
